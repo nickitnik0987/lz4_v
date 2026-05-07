@@ -19,5 +19,7 @@ final class LZ4Java${type}Compressor extends LZ4Compressor {
   public static final LZ4Compressor INSTANCE = new LZ4Java${type}Compressor();
 
 @include{"compress.template"; storage = "byte[]"; utils = "${type}Utils"}
+
 @include{"compress.template"; storage = "ByteBuffer"; utils = "ByteBufferUtils"}
+
 }

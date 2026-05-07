@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Locale;
 
+import static net.jpountz.lz4.LZ4Utils.notEnoughSpace;
+
 /**
  * Implementation of the v1.5.1 LZ4 Frame format. This class is NOT thread safe.
  * <p>
@@ -62,14 +64,17 @@ public class LZ4FrameOutputStream extends FilterOutputStream {
   public static enum BLOCKSIZE {
     SIZE_64KB(4), SIZE_256KB(5), SIZE_1MB(6), SIZE_4MB(7);
     private final int indicator;
+
     BLOCKSIZE(int indicator) {
       this.indicator = indicator;
     }
+
     public int getIndicator() {
       return this.indicator;
     }
+
     public static BLOCKSIZE valueOf(int indicator) {
-      switch(indicator) {
+      switch (indicator) {
         case 7: return SIZE_4MB;
         case 6: return SIZE_1MB;
         case 5: return SIZE_256KB;
@@ -115,7 +120,7 @@ public class LZ4FrameOutputStream extends FilterOutputStream {
    */
   public LZ4FrameOutputStream(OutputStream out, BLOCKSIZE blockSize, long knownSize, FLG.Bits... bits) throws IOException {
     this(out, blockSize, knownSize, LZ4Factory.fastestInstance().fastCompressor(),
-	 XXHashFactory.fastestInstance().hash32(), bits);
+      XXHashFactory.fastestInstance().hash32(), bits);
   }
 
   /**
@@ -261,7 +266,7 @@ public class LZ4FrameOutputStream extends FilterOutputStream {
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
-    if ((off < 0) || (len < 0) || (off + len > b.length)) {
+    if ((off < 0) || (len < 0) || notEnoughSpace(b.length - off, len)) {
       throw new IndexOutOfBoundsException();
     }
     ensureNotFinished();
@@ -320,6 +325,7 @@ public class LZ4FrameOutputStream extends FilterOutputStream {
       BLOCK_INDEPENDENCE(5);
 
       private final int position;
+
       Bits(int position) {
         this.position = position;
       }
@@ -343,12 +349,12 @@ public class LZ4FrameOutputStream extends FilterOutputStream {
     }
 
     public static FLG fromByte(byte flg) {
-      final byte versionMask = (byte)(flg & (3 << 6));
+      final byte versionMask = (byte) (flg & (3 << 6));
       return new FLG(versionMask >>> 6, (byte) (flg ^ versionMask));
     }
 
     public byte toByte() {
-      return (byte)(bitSet.toByteArray()[0] | ((version & 3) << 6));
+      return (byte) (bitSet.toByteArray()[0] | ((version & 3) << 6));
     }
 
     private void validate() {

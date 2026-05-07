@@ -29,6 +29,9 @@ final class LZ4HCJava${type}Compressor extends LZ4Compressor {
   }
 
 @include{"hashtable.template"}
+
 @include{"compress_hc.template"; storage = "byte[]"; utils = "${type}Utils"}
+
 @include{"compress_hc.template"; storage = "ByteBuffer"; utils = "ByteBufferUtils"}
+
 }

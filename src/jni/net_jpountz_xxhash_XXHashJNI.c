@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 #include "xxhash.h"
-#include "net_jpountz_xxhash_XXHashJNI.h"
+#include <jni.h>
 
 static jclass OutOfMemoryError;
 

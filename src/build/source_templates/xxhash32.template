@@ -18,7 +18,9 @@ final class XXHash32Java${type} extends XXHash32 {
   public static final XXHash32 INSTANCE = new XXHash32Java${type}();
 
 @include{"xxhash32_hash.template"; storage = "byte[]"; utils = type + "Utils"}
+
 @include{"xxhash32_hash.template"; storage = "ByteBuffer"; utils = "ByteBufferUtils"}
+
 
 }
 

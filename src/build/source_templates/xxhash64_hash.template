@@ -15,14 +15,12 @@
 }
   @Override
   public long hash(${storage} buf, int off, int len, long seed) {
+    ${utils}.checkRange(buf, off, len);
 @if{storage == "ByteBuffer"}
     if (buf.hasArray()) {
       return hash(buf.array(), off + buf.arrayOffset(), len, seed);
     }
-    ${utils}.checkRange(buf, off, len);
     buf = ${utils}.inLittleEndianOrder(buf);
-@else{}
-    ${utils}.checkRange(buf, off, len);
 @end{}
     final int end = off + len;
     long h64;

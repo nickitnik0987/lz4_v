@@ -23,17 +23,22 @@ public class LZ4FactoryTest extends TestCase {
   public void test() {
     assertEquals(LZ4JNICompressor.INSTANCE, LZ4Factory.nativeInstance().fastCompressor());
     assertEquals(LZ4HCJNICompressor.INSTANCE, LZ4Factory.nativeInstance().highCompressor());
-    assertEquals(LZ4JavaUnsafeCompressor.INSTANCE, LZ4Factory.unsafeInstance().fastCompressor());
-    assertEquals(LZ4HCJavaUnsafeCompressor.INSTANCE, LZ4Factory.unsafeInstance().highCompressor());
+    assertEquals(LZ4JavaSafeCompressor.INSTANCE, LZ4Factory.unsafeInstance().fastCompressor());
+    assertEquals(LZ4HCJavaSafeCompressor.INSTANCE, LZ4Factory.unsafeInstance().highCompressor());
+    assertEquals(LZ4JavaUnsafeCompressor.INSTANCE, LZ4Factory.unsafeInsecureInstance().fastCompressor());
+    assertEquals(LZ4HCJavaUnsafeCompressor.INSTANCE, LZ4Factory.unsafeInsecureInstance().highCompressor());
     assertEquals(LZ4JavaSafeCompressor.INSTANCE, LZ4Factory.safeInstance().fastCompressor());
     assertEquals(LZ4HCJavaSafeCompressor.INSTANCE, LZ4Factory.safeInstance().highCompressor());
 
-    assertEquals(LZ4JNIFastDecompressor.INSTANCE, LZ4Factory.nativeInstance().fastDecompressor());
-    assertEquals(LZ4JavaUnsafeFastDecompressor.INSTANCE, LZ4Factory.unsafeInstance().fastDecompressor());
+    assertEquals(LZ4JNIFastDecompressor.INSTANCE, LZ4Factory.nativeInsecureInstance().fastDecompressor());
+    assertEquals(LZ4JavaUnsafeFastDecompressor.INSTANCE, LZ4Factory.unsafeInsecureInstance().fastDecompressor());
+    assertEquals(LZ4JavaSafeFastDecompressor.INSTANCE, LZ4Factory.nativeInstance().fastDecompressor());
+    assertEquals(LZ4JavaSafeFastDecompressor.INSTANCE, LZ4Factory.unsafeInstance().fastDecompressor());
     assertEquals(LZ4JavaSafeFastDecompressor.INSTANCE, LZ4Factory.safeInstance().fastDecompressor());
 
     assertEquals(LZ4JNISafeDecompressor.INSTANCE, LZ4Factory.nativeInstance().safeDecompressor());
-    assertEquals(LZ4JavaUnsafeSafeDecompressor.INSTANCE, LZ4Factory.unsafeInstance().safeDecompressor());
+    assertEquals(LZ4JavaSafeSafeDecompressor.INSTANCE, LZ4Factory.unsafeInstance().safeDecompressor());
+    assertEquals(LZ4JavaUnsafeSafeDecompressor.INSTANCE, LZ4Factory.unsafeInsecureInstance().safeDecompressor());
     assertEquals(LZ4JavaSafeSafeDecompressor.INSTANCE, LZ4Factory.safeInstance().safeDecompressor());
   }
 

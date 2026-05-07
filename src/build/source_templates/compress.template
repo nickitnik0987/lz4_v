@@ -62,7 +62,8 @@
         // encode literal length
         int tokenOff = dOff++;
 
-        if (dOff + runLen + (2 + 1 + LAST_LITERALS) + (runLen >>> 8) > destEnd) {
+        // we don't know the matchLen yet, do an early check for now.
+        if (notEnoughSpace(destEnd - dOff, sequenceLength(runLen, 0) + 1 + LAST_LITERALS)) {
           throw new LZ4Exception("maxDestLen is too small");
         }
 
@@ -86,7 +87,7 @@
           sOff += MIN_MATCH;
           ref += MIN_MATCH;
           final int matchLen = LZ4${utils}.commonBytes(src, ref, sOff, srcLimit);
-          if (dOff + (1 + LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
+          if (notEnoughSpace(destEnd - dOff, (1 + LAST_LITERALS) + lengthOfEncodedInteger(matchLen))) {
             throw new LZ4Exception("maxDestLen is too small");
           }
           sOff += matchLen;
@@ -132,6 +133,8 @@
 
   @Override
   public int compress(${storage} src, final int srcOff, int srcLen, ${storage} dest, final int destOff, int maxDestLen) {
+    ${utils}.checkRange(src, srcOff, srcLen);
+    ${utils}.checkRange(dest, destOff, maxDestLen);
 @if{ storage == "ByteBuffer"}
     if (src.hasArray() && dest.hasArray()) {
       return compress(src.array(), srcOff + src.arrayOffset(), srcLen, dest.array(), destOff + dest.arrayOffset(), maxDestLen);
@@ -139,8 +142,6 @@
     src = ${utils}.inNativeByteOrder(src);
     dest = ${utils}.inNativeByteOrder(dest);
 @end{}
-    ${utils}.checkRange(src, srcOff, srcLen);
-    ${utils}.checkRange(dest, destOff, maxDestLen);
     final int destEnd = destOff + maxDestLen;
 
     if (srcLen < LZ4_64K_LIMIT) {
@@ -193,7 +194,8 @@
       // encode literal length
       int tokenOff = dOff++;
 
-      if (dOff + runLen + (2 + 1 + LAST_LITERALS) + (runLen >>> 8) > destEnd) {
+      // we don't know the matchLen yet, do an early check for now.
+      if (notEnoughSpace(destEnd - dOff, sequenceLength(runLen, 0) + 1 + LAST_LITERALS)) {
         throw new LZ4Exception("maxDestLen is too small");
       }
 
@@ -216,7 +218,7 @@
         // count nb matches
         sOff += MIN_MATCH;
         final int matchLen = LZ4${utils}.commonBytes(src, ref + MIN_MATCH, sOff, srcLimit);
-        if (dOff + (1 + LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
+        if (notEnoughSpace(destEnd - dOff, (1 + LAST_LITERALS) + lengthOfEncodedInteger(matchLen))) {
           throw new LZ4Exception("maxDestLen is too small");
         }
         sOff += matchLen;

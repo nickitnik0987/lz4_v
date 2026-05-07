@@ -3,6 +3,7 @@
 package net.jpountz.lz4;
 
 import static net.jpountz.lz4.LZ4Constants.*;
+import static net.jpountz.lz4.LZ4Utils.*;
 
 import java.nio.ByteBuffer;
 
@@ -17,7 +18,9 @@ final class LZ4Java@{type}${size}Decompressor extends LZ4${size}Decompressor {
   public static final LZ4${size}Decompressor INSTANCE = new LZ4Java${type}${size}Decompressor();
 
 @include{"decompress.template"; storage = "byte[]"; utils = "${type}Utils"}
+
 @include{"decompress.template"; storage = "ByteBuffer"; utils = "ByteBufferUtils"}
+
 
 }
 

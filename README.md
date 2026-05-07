@@ -1,9 +1,16 @@
-*Note: The official lz4-java project has been discontinued. A community fork is available [here](https://github.com/yawkat/lz4-java). To address [CVE-2025-12183](https://sites.google.com/sonatype.com/vulnerabilities/cve-2025-12183), Sonatype has added a redirect from `org.lz4:lz4-java:1.8.1` to the new group ID.*
-
 # LZ4 Java
 
+*Community-maintained fork of https://github.com/lz4/lz4-java to patch [CVE‐2025‐12183](https://sites.google.com/sonatype.com/vulnerabilities/cve-2025-12183). Maven coordinates:*
+
+```xml
+<dependency>
+    <groupId>at.yawk.lz4</groupId>
+    <artifactId>lz4-java</artifactId>
+</dependency>
+```
+
 LZ4 compression for Java, based on Yann Collet's work available at
-http://code.google.com/p/lz4/.
+https://github.com/lz4/lz4.
 
 This library provides access to two compression methods that both generate a
 valid LZ4 stream:
@@ -134,15 +141,16 @@ int hash = hash32.getValue();
 
 # Download
 
-You can download released artifacts from [Maven Central](https://search.maven.org/search?q=g:org.lz4%20a:lz4-java).
+You can download released artifacts from [Maven Central](https://central.sonatype.com/artifact/at.yawk.lz4/lz4-java).
 
-You can download pure-Java lz4-java from [Maven Central](https://search.maven.org/search?q=g:org.lz4%20a:lz4-pure-java). These artifacts include the Safe and Unsafe Java versions but not JNI bindings. (Experimental)
+Prior to 1.8.1, there was also a lz4-pure-java artifact that excluded the JNI binary. This artifact has been discontinued because it is difficult to build and doesn't make a lot of sense from a design standpoint. The latest version of this artifact is still vulnerable to CVE‐2025‐12183. Please open an issue if you have a use case that requires this version.
 
 # Documentation
 
- - [lz4](https://lz4.github.io/lz4-java/1.8.0/docs/net/jpountz/lz4/package-summary.html)
- - [xxhash](https://lz4.github.io/lz4-java/1.8.0/docs/net/jpountz/xxhash/package-summary.html)
- - [changelog](https://github.com/lz4/lz4-java/blob/master/CHANGES.md)
+ - [lz4](https://javadoc.io/doc/at.yawk.lz4/lz4-java/latest/org.lz4.java/net/jpountz/lz4/package-summary.html)
+ - [xxhash](https://javadoc.io/doc/at.yawk.lz4/lz4-java/latest/org.lz4.java/net/jpountz/xxhash/package-summary.html)
+ - [changelog (versions <= 1.8.0)](https://github.com/yawkat/lz4-java/blob/main/CHANGES.md)
+ - [changelog / GitHub releases (versions >= 1.8.1)](https://github.com/yawkat/lz4-java/releases)
 
 # Performance
 
@@ -157,40 +165,10 @@ speed at which they compress/decompress/hash bytes.
 
 # Build
 
-## Requirements
+Make sure you have a Java 7 installation in your [Maven toolchains.xml](https://maven.apache.org/guides/mini/guide-using-toolchains.html). You may also need a C compiler.
 
- - JDK version 7 or newer,
- - ant version 1.10.2 or newer,
- - ivy.
+First run git submodule init and then git submodule update to initialize the lz4 submodule in src/lz4.
 
-If ivy is not installed yet, ant can take care of it for you, just run
-`ant ivy-bootstrap`. The library will be installed under ${user.home}/.ant/lib.
+Then, run `./mvnw verify`.
 
-You might hit an error like the following when the ivy in ${user.home}/.ant/lib is old. You can delete it and then run `ant ivy-bootstrap` again to install the latest version.
-```
-[ivy:resolve] 		::::::::::::::::::::::::::::::::::::::::::::::
-[ivy:resolve] 		::          UNRESOLVED DEPENDENCIES         ::
-[ivy:resolve] 		::::::::::::::::::::::::::::::::::::::::::::::
-```
-
-## Instructions
-
-For lz4-java 1.5.0 or newer, first run `git submodule init` and then `git submodule update`
-to initialize the `lz4` submodule in `src/lz4`.
-
-Then run `ant`. It will:
-
- - generate some Java source files in `build/java` from the templates that are
-   located under `src/build`,
- - compile the lz4 and xxhash libraries and their JNI (Java Native Interface)
-   bindings,
- - compile Java sources in `src/java` (normal sources), `src/java-unsafe`
-   (sources that make use of `sun.misc.Unsafe`) and `build/java`
-   (auto-generated sources) to `build/classes`, `build/unsafe-classes` and
-   `build/generated-classes`,
- - generate a JAR file called lz4-${version}.jar under the `dist` directory.
-
-The JAR file that is generated contains Java class files, the native library
-and the JNI bindings. If you add this JAR to your classpath, the native library
-will be copied to a temporary directory and dynamically linked to your Java
-application.
+Building a full artifact with native libraries for all supported platforms is more complex. We do this through github actions.

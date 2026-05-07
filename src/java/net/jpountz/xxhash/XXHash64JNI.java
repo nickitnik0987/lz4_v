@@ -34,8 +34,8 @@ final class XXHash64JNI extends XXHash64 {
 
   @Override
   public long hash(ByteBuffer buf, int off, int len, long seed) {
+    checkRange(buf, off, len);
     if (buf.isDirect()) {
-      checkRange(buf, off, len);
       return XXHashJNI.XXH64BB(buf, off, len, seed);
     } else if (buf.hasArray()) {
       return hash(buf.array(), off + buf.arrayOffset(), len, seed);

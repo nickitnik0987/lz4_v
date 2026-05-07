@@ -34,8 +34,8 @@ final class XXHash32JNI extends XXHash32 {
 
   @Override
   public int hash(ByteBuffer buf, int off, int len, int seed) {
+    checkRange(buf, off, len);
     if (buf.isDirect()) {
-      checkRange(buf, off, len);
       return XXHashJNI.XXH32BB(buf, off, len, seed);
     } else if (buf.hasArray()) {
       return hash(buf.array(), off + buf.arrayOffset(), len, seed);

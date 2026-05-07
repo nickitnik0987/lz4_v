@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import net.jpountz.util.Native;
 import net.jpountz.util.Utils;
+
 import static net.jpountz.lz4.LZ4Constants.DEFAULT_COMPRESSION_LEVEL;
 import static net.jpountz.lz4.LZ4Constants.MAX_COMPRESSION_LEVEL;
 
@@ -48,16 +49,18 @@ import static net.jpountz.lz4.LZ4Constants.MAX_COMPRESSION_LEVEL;
  */
 public final class LZ4Factory {
 
-  private static LZ4Factory instance(String impl) {
+  private static LZ4Factory instance(String impl, boolean insecureFastDecompressor) {
     try {
-      return new LZ4Factory(impl);
+      return new LZ4Factory(impl, insecureFastDecompressor);
     } catch (Exception e) {
       throw new AssertionError(e);
     }
   }
 
   private static LZ4Factory NATIVE_INSTANCE,
+                            NATIVE_INSECURE_INSTANCE,
                             JAVA_UNSAFE_INSTANCE,
+                            JAVA_UNSAFE_INSECURE_INSTANCE,
                             JAVA_SAFE_INSTANCE;
 
   /**
@@ -90,9 +93,28 @@ public final class LZ4Factory {
    */
   public static synchronized LZ4Factory nativeInstance() {
     if (NATIVE_INSTANCE == null) {
-      NATIVE_INSTANCE = instance("JNI");
+      NATIVE_INSTANCE = instance("JNI", false);
     }
     return NATIVE_INSTANCE;
+  }
+
+  /**
+   * Insecure variant of {@link #nativeInstance()}. The JNI-based {@link LZ4FastDecompressor} is not secure for
+   * untrusted inputs, so {@link #nativeInstance()} will instead return the slower safe java implementation from
+   * {@link #fastDecompressor()}. If that implementation is too slow for you, it is recommended to move to
+   * {@link #safeDecompressor()}, which is actually faster even than the JNI {@link #fastDecompressor()}. Only if that
+   * is not an option for you, and you can guarantee no untrusted inputs will be decompressed, should you use this
+   * method.
+   *
+   * @return An insecure, JNI-backed LZ4Factory
+   * @deprecated Never decompress untrusted inputs with this instance. Prefer {@link #nativeInstance()}.
+   */
+  @Deprecated
+  public static synchronized LZ4Factory nativeInsecureInstance() {
+    if (NATIVE_INSECURE_INSTANCE == null) {
+      NATIVE_INSECURE_INSTANCE = instance("JNI", true);
+    }
+    return NATIVE_INSECURE_INSTANCE;
   }
 
   /**
@@ -104,7 +126,7 @@ public final class LZ4Factory {
    */
   public static synchronized LZ4Factory safeInstance() {
     if (JAVA_SAFE_INSTANCE == null) {
-      JAVA_SAFE_INSTANCE = instance("JavaSafe");
+      JAVA_SAFE_INSTANCE = instance("JavaSafe", false);
     }
     return JAVA_SAFE_INSTANCE;
   }
@@ -117,12 +139,36 @@ public final class LZ4Factory {
    * @return a {@link LZ4Factory} instance that returns compressors and
    * decompressors that may use {@link sun.misc.Unsafe} to speed up compression
    * and decompression.
+   *
+   * @deprecated Note: It is not yet clear which Unsafe-based implementations are secure. Out of caution, this method
+   * currently returns the {@link #safeInstance()}. In a future version, when security has been assessed, this method
+   * may return to Unsafe.
    */
+  @Deprecated
   public static synchronized LZ4Factory unsafeInstance() {
     if (JAVA_UNSAFE_INSTANCE == null) {
-      JAVA_UNSAFE_INSTANCE = instance("JavaUnsafe");
+      // TODO: move back to `instance("JavaUnsafe", false)` once we know more about the security of the Unsafe implementation
+      JAVA_UNSAFE_INSTANCE = safeInstance();
     }
     return JAVA_UNSAFE_INSTANCE;
+  }
+
+  /**
+   * Insecure variant of {@link #unsafeInstance()}. The Unsafe-based {@link LZ4FastDecompressor} is not secure for
+   * untrusted inputs, so {@link #unsafeInstance()} will instead return the slower safe java implementation from
+   * {@link #fastDecompressor()}. If that implementation is too slow for you, it is recommended to move to
+   * {@link #safeDecompressor()}. Only if that is not an option for you, and you can guarantee no untrusted inputs will
+   * be decompressed, should you use this method.
+   *
+   * @return An insecure, Unsafe-backed LZ4Factory
+   * @deprecated Never decompress untrusted inputs with this instance. Prefer {@link #unsafeInstance()}.
+   */
+  @Deprecated
+  public static synchronized LZ4Factory unsafeInsecureInstance() {
+    if (JAVA_UNSAFE_INSECURE_INSTANCE == null) {
+      JAVA_UNSAFE_INSECURE_INSTANCE = instance("JavaUnsafe", true);
+    }
+    return JAVA_UNSAFE_INSECURE_INSTANCE;
   }
 
   /**
@@ -186,18 +232,22 @@ public final class LZ4Factory {
   private final LZ4Compressor highCompressor;
   private final LZ4FastDecompressor fastDecompressor;
   private final LZ4SafeDecompressor safeDecompressor;
-  private final LZ4Compressor[] highCompressors = new LZ4Compressor[MAX_COMPRESSION_LEVEL+1];
+  private final LZ4Compressor[] highCompressors = new LZ4Compressor[MAX_COMPRESSION_LEVEL + 1];
 
-  private LZ4Factory(String impl) throws ClassNotFoundException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
+  private LZ4Factory(String impl, boolean insecureFastDecompressor) throws ClassNotFoundException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
     this.impl = impl;
     fastCompressor = classInstance("net.jpountz.lz4.LZ4" + impl + "Compressor");
     highCompressor = classInstance("net.jpountz.lz4.LZ4HC" + impl + "Compressor");
-    fastDecompressor = classInstance("net.jpountz.lz4.LZ4" + impl + "FastDecompressor");
+    if (insecureFastDecompressor) {
+      fastDecompressor = classInstance("net.jpountz.lz4.LZ4" + impl + "FastDecompressor");
+    } else {
+      fastDecompressor = LZ4JavaSafeFastDecompressor.INSTANCE;
+    }
     safeDecompressor = classInstance("net.jpountz.lz4.LZ4" + impl + "SafeDecompressor");
     Constructor<? extends LZ4Compressor> highConstructor = highCompressor.getClass().getDeclaredConstructor(int.class);
     highCompressors[DEFAULT_COMPRESSION_LEVEL] = highCompressor;
-    for(int level = 1; level <= MAX_COMPRESSION_LEVEL; level++) {
-      if(level == DEFAULT_COMPRESSION_LEVEL) continue;
+    for (int level = 1; level <= MAX_COMPRESSION_LEVEL; level++) {
+      if (level == DEFAULT_COMPRESSION_LEVEL) continue;
       highCompressors[level] = highConstructor.newInstance(level);
     }
 
@@ -261,7 +311,7 @@ public final class LZ4Factory {
    * {@link #fastCompressor()} and is slower but compresses more efficiently.
    */
   public LZ4Compressor highCompressor(int compressionLevel) {
-    if(compressionLevel > MAX_COMPRESSION_LEVEL) {
+    if (compressionLevel > MAX_COMPRESSION_LEVEL) {
       compressionLevel = MAX_COMPRESSION_LEVEL;
     } else if (compressionLevel < 1) {
       compressionLevel = DEFAULT_COMPRESSION_LEVEL;

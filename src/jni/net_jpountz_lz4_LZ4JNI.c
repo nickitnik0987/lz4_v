@@ -16,7 +16,7 @@
 
 #include "lz4.h"
 #include "lz4hc.h"
-#include "net_jpountz_lz4_LZ4JNI.h"
+#include <jni.h>
 
 static jclass OutOfMemoryError;
 
